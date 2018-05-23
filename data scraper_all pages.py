@@ -92,7 +92,8 @@ for link in list_of_links:
                  "Surface (m²)": surface,
                  "Number of rooms": n_rooms,
                  "Neighbourhood": neighbourhood,
-                 "Year built": year_built
+                 "Year built": year_built,
+                 
                  })
     
     time.sleep(randint(5, 10))
