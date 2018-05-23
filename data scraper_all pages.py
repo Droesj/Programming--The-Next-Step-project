@@ -74,7 +74,19 @@ for link in list_of_links:
                 surface = elements[0][i+1].rstrip(' m²')
             elif item == 'Bouwjaar':
                 year_built = elements[0][i+1]
-            #might want to add more stuff
+            elif item == 'Inhoud (m³)':
+                volume = elements[0][i+1].rstrip(' m³')
+            elif item == 'Status':
+                listing_status = elements[0][i+1]
+            elif item == 'Aangeboden sinds':
+                date_posted = elements[0][i+1]
+
+    for item in my_browser.find_elements_by_id("listing-buy-map"):
+        longitude = item.get_attribute('data-lng')
+        latitude = item.get_attribute('data-lat')
+            
+    #might want to add more stuff
+            
     data.append({"Price": price,
                  "Zipcode": zipcode,
                  "Surface (m²)": surface,

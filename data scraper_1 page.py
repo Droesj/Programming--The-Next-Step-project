@@ -189,20 +189,20 @@ df = pd.DataFrame(data)
 print(df)
 
 #%%
-elements = []
-my_browser = webdriver.Chrome(executable_path=r'C:\Users\S.Evelo\.spyder-py3\PNS project\chromedriver')
+
+my_browser = webdriver.Chrome(executable_path=r'C:\Users\droes\.spyder-py3\chromedriver')
 my_browser.get("https://www.pararius.nl/appartement-te-koop/amsterdam/PB0002376055/willemsparkweg")
+
 #%%
 data = []
 elements = []
 
 for item in my_browser.find_elements_by_class_name('details-container'):
     elements.append(item.text.split('\n'))
-    #print(elements)
+    
     for i, item in enumerate(elements[0]):
         if item == 'Buurt':
             neighbourhood = elements[0][i+1]
-            #print(neighbourhood)
         elif item == 'Postcode':
             zipcode = elements[0][i+1].replace(' ', '')
         elif item == 'Vraagprijs':
@@ -213,21 +213,32 @@ for item in my_browser.find_elements_by_class_name('details-container'):
             surface = elements[0][i+1].rstrip(' m²')
         elif item == 'Bouwjaar':
             year_built = elements[0][i+1]
+        elif item == 'Inhoud (m³)':
+            volume = elements[0][i+1].rstrip(' m³')
+        elif item == 'Status':
+            listing_status = elements[0][i+1]
+        elif item == 'Aangeboden sinds':
+            date_posted = elements[0][i+1]
 
-mapstuff = []
-x = my_browser.find_element_by_class_name("mapboxgl-map")
-mapstuff.append(x.text)
-print(mapstuff)
+for item in my_browser.find_elements_by_id("listing-buy-map"):
+    longitude = item.get_attribute('data-lng')
+    latitude = item.get_attribute('data-lat')
     
 data.append({"Price": price,
              "Zipcode": zipcode,
              "Surface (m²)": surface,
              "Number of rooms": n_rooms,
              "Neighbourhood": neighbourhood,
-             "Year built": year_built
+             "Year built": year_built,
+             "Total volume (m³)": volume,
+             "Listing status": listing_status,
+             "Date posted": date_posted,
+             "Coordinates": (longitude,latitude)
              })
-df = pd.DataFrame(data)
-#print(df)
+data_frame = pd.DataFrame(data)
+print(data_frame)
+#%%
+data_frame.to_csv('data_frame_1.csv',  sep = ";")
 
 #%%
 #//*[@id="listing-buy-map"]
