@@ -60,43 +60,55 @@ for link in list_of_links:
     my_browser.get(str(link))
     elements = []
     for item in my_browser.find_elements_by_class_name('details-container'):
-        elements.append(item.text.split('\n'))
-        for i, item in enumerate(elements[0]):
-            if item == 'Buurt':
-                neighbourhood = elements[0][i+1]
-            elif item == 'Postcode':
-                zipcode = elements[0][i+1].replace(' ', '')
-            elif item == 'Vraagprijs':
-                price = elements[0][i+1].lstrip('€ ').rstrip(',-')
-            elif item == 'Aantal kamers':
-                n_rooms = elements[0][i+1]
-            elif item == 'Oppervlakte (m²)':
-                surface = elements[0][i+1].rstrip(' m²')
-            elif item == 'Bouwjaar':
-                year_built = elements[0][i+1]
-            elif item == 'Inhoud (m³)':
-                volume = elements[0][i+1].rstrip(' m³')
-            elif item == 'Status':
-                listing_status = elements[0][i+1]
-            elif item == 'Aangeboden sinds':
-                date_posted = elements[0][i+1]
+            elements.append(item.text.split('\n'))
+            for i, item in enumerate(elements[0]):
+                if item == 'Buurt':
+                    neighbourhood = elements[0][i+1]
+                elif item == 'Postcode':
+                    zipcode = elements[0][i+1].replace(' ', '')
+                elif item == 'Vraagprijs':
+                    price = elements[0][i+1].lstrip('€ ').rstrip(',-')
+                elif item == 'Aantal kamers':
+                    n_rooms = elements[0][i+1]
+                elif item == 'Aantal slaapkamers':
+                    n_bedrooms = elements[0][i+1]
+                elif item == 'Oppervlakte (m²)':
+                    surface = elements[0][i+1].rstrip(' m²')
+                elif item == 'Bouwjaar':
+                    year_built = elements[0][i+1]
+                elif item == 'Inhoud (m³)':
+                    volume = elements[0][i+1].rstrip(' m³')
+                elif item == 'Status':
+                    listing_status = elements[0][i+1]
+                elif item == 'Aangeboden sinds':
+                    date_posted = elements[0][i+1]
+                elif item == 'Tuin aanwezig':
+                    garden == list(elements[0][i+1] )
+                    garden.append(elements[elements.index('Tuininformatie')+1])
+                
 
-    for item in my_browser.find_elements_by_id("listing-buy-map"):
-        longitude = item.get_attribute('data-lng')
-        latitude = item.get_attribute('data-lat')
+        for item in my_browser.find_elements_by_id("listing-buy-map"):
+            longitude = item.get_attribute('data-lng')
+            latitude = item.get_attribute('data-lat')
             
     #might want to add more stuff
             
-    data.append({"Price": price,
-                 "Zipcode": zipcode,
-                 "Surface (m²)": surface,
-                 "Number of rooms": n_rooms,
-                 "Neighbourhood": neighbourhood,
-                 "Year built": year_built,
-                 
-                 })
+        property_data.append({"link": link,
+                              "Price": price,
+                              "Zipcode": zipcode,
+                              "Surface (m²)": surface,
+                              "Number of rooms": n_rooms,
+                              "Number of bedrooms": n_bedrooms,
+                              "Neighbourhood": neighbourhood,
+                              "Year built": year_built,
+                              "Total volume (m³)": volume,
+                              "Listing_status": listing_status,
+                              "Available since": date_posted,
+                              "Coordinates": (longitude,latitude),
+                              "garden": garden
+                              })
     
-    time.sleep(randint(5, 10))
+    #time.sleep(randint(5, 10))
 df = pd.DataFrame(data)
 print(df)
 #%%
