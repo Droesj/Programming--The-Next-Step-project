@@ -107,5 +107,5 @@ def scrape_links(driver_filepath, location, pagerange, textfile_name):
     
 #%%
 '''Cell that runs the function'''  
-scrape_links(r'C:\Users\droes\.spyder-py3\chromedriver', 'amsterdam', (1,61), 'pararius_links_amsterdam_final.txt')
+scrape_links(r'C:\Users\droes\.spyder-py3\chromedriver', 'amsterdam', (1,1), 'pararius_links_new.txt')
 

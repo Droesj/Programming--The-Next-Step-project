@@ -206,23 +206,27 @@ for item in my_browser.find_elements_by_class_name('details-container'):
         elif item == 'Postcode':
             zipcode = elements[0][i+1].replace(' ', '')
         elif item == 'Vraagprijs':
-            price = elements[0][i+1].lstrip('€ ').rstrip(',-')
+            price = int(elements[0][i+1].replace(".","").lstrip('€ ').rstrip(',-'))
         elif item == 'Aantal kamers':
-            n_rooms = elements[0][i+1]
+            n_rooms = int(elements[0][i+1])
+        elif item == 'Aantal slaapkamers':
+            n_bedrooms = int(elements[0][i+1])
         elif item == 'Oppervlakte (m²)':
-            surface = elements[0][i+1].rstrip(' m²')
+            surface = int(elements[0][i+1].rstrip(' m²'))
         elif item == 'Bouwjaar':
-            year_built = elements[0][i+1]
+            year_built = int(elements[0][i+1])
         elif item == 'Inhoud (m³)':
-            volume = elements[0][i+1].rstrip(' m³')
+            volume = int(elements[0][i+1].rstrip(' m³'))
         elif item == 'Status':
             listing_status = elements[0][i+1]
         elif item == 'Aangeboden sinds':
             date_posted = elements[0][i+1]
+        elif item == 'Badkamerfaciliteiten':
+            bathroom_items = elements[0][i+1]
 
 for item in my_browser.find_elements_by_id("listing-buy-map"):
-    longitude = item.get_attribute('data-lng')
-    latitude = item.get_attribute('data-lat')
+    longitude = float(item.get_attribute('data-lng'))
+    latitude = float(item.get_attribute('data-lat'))
     
 data.append({"Price": price,
              "Zipcode": zipcode,
@@ -233,10 +237,13 @@ data.append({"Price": price,
              "Total volume (m³)": volume,
              "Listing status": listing_status,
              "Date posted": date_posted,
-             "Coordinates": (longitude,latitude)
+             "Coordinates": [longitude,latitude],
              })
 data_frame = pd.DataFrame(data)
 print(data_frame)
+#%%
+data_frame['Price'][0]
+
 #%%
 data_frame.to_csv('data_frame_1.csv',  sep = ";")
 

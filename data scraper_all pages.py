@@ -34,7 +34,8 @@ from random import randint
 #my_browser = webdriver.Chrome(executable_path=r'C:\Users\S.Evelo\.spyder-py3\PNS project\chromedriver', 
 #                              chrome_options=my_option)
 
-my_browser = webdriver.Chrome(executable_path=r'C:\Users\S.Evelo\.spyder-py3\PNS project\chromedriver')
+my_browser = webdriver.Chrome(executable_path=r'C:\Users\droes\.spyder-py3\chromedriver')
+my_browser.get("https://www.pararius.nl/koopwoningen/amsterdam")
 
 
 #%%
@@ -77,7 +78,7 @@ for link in list_of_links:
                 elif item == 'Bouwjaar':
                     year_built = elements[0][i+1]
                 elif item == 'Inhoud (m³)':
-                    volume = elements[0][i+1].rstrip(' m³')
+                    volume = elements[0][i+1].replace('.','').rstrip(' m³')
                 elif item == 'Status':
                     listing_status = elements[0][i+1]
                 elif item == 'Aangeboden sinds':
@@ -87,29 +88,29 @@ for link in list_of_links:
                     garden.append(elements[elements.index('Tuininformatie')+1])
                 
 
-        for item in my_browser.find_elements_by_id("listing-buy-map"):
-            longitude = item.get_attribute('data-lng')
-            latitude = item.get_attribute('data-lat')
+            for item in my_browser.find_elements_by_id("listing-buy-map"):
+                longitude = item.get_attribute('data-lng')
+                latitude = item.get_attribute('data-lat')
             
-    #might want to add more stuff
+                #might want to add more stuff
             
-        property_data.append({"link": link,
-                              "Price": price,
-                              "Zipcode": zipcode,
-                              "Surface (m²)": surface,
-                              "Number of rooms": n_rooms,
-                              "Number of bedrooms": n_bedrooms,
-                              "Neighbourhood": neighbourhood,
-                              "Year built": year_built,
-                              "Total volume (m³)": volume,
-                              "Listing_status": listing_status,
-                              "Available since": date_posted,
-                              "Coordinates": (longitude,latitude),
-                              "garden": garden
-                              })
+                property_data.append({"link": link,
+                                      "Price": price,
+                                      "Zipcode": zipcode,
+                                      "Surface (m²)": surface,
+                                      "Number of rooms": n_rooms,
+                                      "Number of bedrooms": n_bedrooms,
+                                      "Neighbourhood": neighbourhood,
+                                      "Year built": year_built,
+                                      "Total volume (m³)": volume,
+                                      "Listing_status": listing_status,
+                                      "Available since": date_posted,
+                                      "Coordinates": (longitude,latitude),
+                                      "garden": garden
+                                      })
     
-    #time.sleep(randint(5, 10))
-df = pd.DataFrame(data)
+    time.sleep(randint(5, 10))
+df = pd.DataFrame(property_data)
 print(df)
 #%%
 
