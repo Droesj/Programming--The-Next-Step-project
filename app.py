@@ -13,6 +13,7 @@ import dash_html_components as html
 #import dash_table_experiments as dt
 import pandas as pd
 from textwrap import dedent
+import plotly.graph_objs as go
 
 
 mapbox_access_token = 'pk.eyJ1IjoiZHJvZXNqIiwiYSI6ImNqaHFiYTBoZzAwMXUzN3F0dXBhOXMwY3IifQ.tgd10h6uc8XViS1NZMcPnw'
@@ -366,7 +367,7 @@ def Price_predictor(n_clicks, value):
         [dash.dependencies.Input('data-viz-menu', 'value')]
         )
 
-def data_viz_input(value):
+def data_viz_input(value):  
     if value == 1:
         return 
     dcc.Graph(id = 'map_2',
@@ -392,11 +393,28 @@ def data_viz_input(value):
                         }
                         }
                          )
-       
+    if value == 2:
+        return 
+    dcc.Graph(id = 'scatterplot',
+              figure = {
+                      'data':[
+                              go.Scatter(
+                                      x = data_frame["Surface (m²)"],
+                                      y = data_frame.Price,
+                                      mode= 'markers',
+                                      opacity = 0.7,
+                                      marker = {'size': 10,
+                                                'color': data_frame.Neighbourhood}
+                                 )],
+                    'layout': {go.Layout(
+                            xaxis={'title': 'Surface (m²)'},
+                            yaxis={'title': 'Price in Euro'},
+                            hovermode='closest'
+                        )}
+                        }
+                        )
 
 
 if __name__ == '__main__':
     app.run_server(debug=True)
 
-#%%
-list(set(data_frame["Type"]))
