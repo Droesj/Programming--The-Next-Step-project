@@ -196,12 +196,12 @@ def display_tab_content(value):
     
 
     elif value == 2:
-        return html.Div([
-                html.Div('Predictor tab')
+        return html.Div([html.H4('Predict the price of your desired property!'),
+                html.Div(id = 'Predictor-tab')
         ])
     elif value == 4:
         return html.Div([
-                html.Div('Data viz tab'),
+                html.Div('Data viz tab', ),
                 dcc.Dropdown(id = 'data-viz-menu',
                              options = [
                                      {'label': 'average price map', 'value': 1},
@@ -369,8 +369,7 @@ def Price_predictor(n_clicks, value):
 
 def data_viz_input(value):  
     if value == 1:
-        return 
-    dcc.Graph(id = 'map_2',
+        return dcc.Graph(id = 'map_2',
               figure = {
                       'data':[{
                               'scattermapbox': {
