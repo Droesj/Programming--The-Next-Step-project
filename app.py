@@ -5,32 +5,36 @@ Created on Mon May 28 13:11:08 2018
 @author: droesj
 """
 
-
+# import libraries
 import dash
-from dash.dependencies import Input, Output, State
+from dash.dependencies import Input, Output
 import dash_core_components as dcc
 import dash_html_components as html
 #import dash_table_experiments as dt
 import pandas as pd
 from textwrap import dedent
 import plotly.graph_objs as go
+from sklearn import linear_model
 
 
-mapbox_access_token = 'pk.eyJ1IjoiZHJvZXNqIiwiYSI6ImNqaHFiYTBoZzAwMXUzN3F0dXBhOXMwY3IifQ.tgd10h6uc8XViS1NZMcPnw'
-
+#Load data
 data_frame = pd.read_csv(r'property_database_final.csv', sep = ";")
 data_frame.rename( columns={'Unnamed: 0':'Property number'}, inplace=True )
-data_frame = data_frame[data_frame.Price < 2500000]
+
+#delete some extreme values
 data_frame = data_frame[data_frame["Surface (m²)"]< 1000]
 data_frame = data_frame[data_frame["Total volume (m³)"]< 20000]
 
+#Need this to display map
+mapbox_access_token = 'pk.eyJ1IjoiZHJvZXNqIiwiYSI6ImNqaHFiYTBoZzAwMXUzN3F0dXBhOXMwY3IifQ.tgd10h6uc8XViS1NZMcPnw'
 
+#Part of the not working neighbourhood price map
 neighbourhood_data_url = 'https://kaart.amsterdam.nl/datasets/datasets-item/t/buurtcombinatiegrenzen-1/export/json'
 neighbourhood_data = pd.read_json(neighbourhood_data_url)
 neighbourhoods = []
 
 
-#load data for Neighbourhood map
+#load data for Neighbourhood map (that does not work yet)
 mean = data_frame.groupby(["Neighbourhood"],).mean()["Price"]
 for nh in range(len(neighbourhood_data['features'])):
     neighbourhood = neighbourhood_data['features'][nh]['properties']['NAAM']
@@ -60,13 +64,14 @@ app.layout = html.Div([
         html.H1('Pararius.nl property analysis'),
         html.Div(
                 dcc.Tabs(
-                        tabs=[{'label': 'Property Price Map', 'value': 1},
-                              {'label': 'Property Aspect predictor', 'value': 2},
+                        tabs=[{'label': 'Information tab', 'value':0},
+                              {'label': 'Property Price Map', 'value': 1},
+                              #{'label': 'Property Aspect predictor', 'value': 2},
                               {'label': 'Property Price Prediction', 'value': 3},
                               {'label': 'Data visualization', 'value': 4} ,
                               {'label': 'Data Table', 'value': 5}
                         ],
-            value=1,
+            value=0,
             id='tabs',
             vertical=True,
             style={
@@ -91,11 +96,52 @@ app.layout = html.Div([
     'margin-right': 'auto'
 })
 
-@app.callback(Output('tab-output', 'children'), [Input('tabs', 'value')])
+# Main callback function for the main content
+                
+                
+@app.callback(Output('tab-output', 'children'), 
+              [Input('tabs', 'value')])
 def display_tab_content(value):
+    
+    if value == 0:
+        #Introduction page with markdown text
+        return html.Div([html.Div(dcc.Markdown(dedent('''
+                               ### Welcome!
+                               
+                               ##### This dashboard containins the data of {} properties in Amsterdam.
+                               
+                               ##### Data is scraped from [Pararius.nl](https://www.pararius.nl) using a slow scraper
+                               ##### which you can find at [my Github]()
+                               
+                               ##### Use the Tabs to the left to navigate to different properties, 
+                               ##### you can use the submenus to pick out different options. 
+                               ##### Currently you can find:
+                                    
+                               * A property price map with interactive slider and hover functions
+                               * a housing price predictor *(under construction)*
+                               * Some data visualization *(under construction)*
+                               * A table with the raw data
+                               
+                               ##### Hope you enjoy it!
+                
+                
+                                '''.format(len(data_frame)))
+                    ), style ={'width':'80%',
+                             'marginBottom': 50,
+                             'marginTop': 20,
+                             'margin-left': 'auto',
+                             'margin-right': 'auto'}
+                  )                           
+                ])
+    
+    
+    
+    
+    
     if value == 3:
+        #prediction tab, sadly the predictor itself does not work yet...
         return html.Div([
-            html.Div(
+            html.Div(#Dropdown menu at the top
                     dcc.Dropdown(id = 'prediction-menu',
                         options = [
                                 {'label': 'Total Surface (m2)', 'value': 'space'},
@@ -107,37 +153,42 @@ def display_tab_content(value):
                         multi = True,
                         value = 1
                             )),
+                    #Slider 1
             html.Div(id = 'dynamic-prediction-input-surface', 
                      style ={'width':'80%',
                              'marginBottom': 50,
                              'marginTop': 20,
                              'margin-left': 'auto',
                              'margin-right': 'auto'}),
+                    #Slider 2
             html.Div(id = 'dynamic-prediction-input-volume',
                      style ={'width':'80%',
                              'marginBottom': 50,
                              'marginTop': 20,
                              'margin-left': 'auto',
                              'margin-right': 'auto'}),
+                    #Slider 3
             html.Div(id = 'dynamic-prediction-input-rooms',
                      style ={'width':'80%',
                              'marginBottom': 50,
                              'marginTop': 20,
                              'margin-left': 'auto',
                              'margin-right': 'auto'}),
+                    #OPtion selector for house type
             html.Div(id = 'dynamic-prediction-input-type',
                      style ={'marginBottom': 50,
                              'marginTop': 20,
                              'margin-left': 'auto',
                              'margin-right': 'auto'}),
+            #Button to fire callback
             html.Button('Submit', id='button',
-                        style = {
-                             'horizontalAllign': 'middle'}),
+                        ),
+                        #outpur
             html.Div(id = 'price-prediction-output', 
                      children = "select values and press submit",
                      )
                     ])
-        
+        #Display the price map
     elif value == 1:
         return html.Div([
                 html.H1('Property price map',
@@ -151,12 +202,69 @@ def display_tab_content(value):
                          style={'width': '30%', 
                                 'float': 'right',
                                 'margin-left': '10px'}),
-                dcc.Graph(id='map', figure={
+                #this contains the map
+                html.Div(id = 'map-container',
+                         style={'width': '70%'} ),
+                html.H4('Select Price range',
+                        style = {'width': '70%',
+                                 'textAlign': 'center' }),         
+                #Price slider
+                html.Div(
+                        dcc.RangeSlider(id = 'pricerange-map',
+                                min = min(data_frame.Price),
+                                max = max(data_frame.Price),
+                                value = [min(data_frame.Price), max(data_frame.Price)],
+                                ),
+                        style = {'width': '70%'}),
+                html.Div(id = 'pricerange-text',
+                         style = {'width': '70%',
+                                  'textAlign': 'center'})
+                
+        ]),
+    
+    #this is not there
+    elif value == 2:
+        return html.Div([html.H4('Predict the price of your desired property!'),
+                html.Div(id = 'Predictor-tab')
+        ])
+    #Data viz tab, both plots are not working yet...
+    elif value == 4:
+        return html.Div([
+                html.H3('Data vizualization tab, choose option below', ),
+                dcc.Dropdown(id = 'data-viz-menu',
+                             options = [
+                                     {'label': 'average price map', 'value': 1},
+                                     {'label': 'graphs', 'value' :2},
+                                     {'label': 'add something', 'value':3}
+                                     ]),
+                    html.Div(id = 'data-viz-content',
+                            )
+        ])
+    #Raw data table, might change this into an interactive one
+    elif value == 5:
+        return html.Div([html.Table(
+                [html.Tr([html.Th(col) for col in data_frame.columns])] + 
+                [html.Tr([
+                        html.Td(data_frame.iloc[i][col]) for col in data_frame.columns
+                        ]) for i in range(min(len(data_frame), len(data_frame)))])
+                    ])
+    
+
+
+#Callback for the pricemap
+@app.callback(Output('map-container', 'children'),
+              [Input('pricerange-map', 'value')]
+              )
+
+def Create_pricemap(values):
+    
+    df_filtered = data_frame[data_frame.Price.between(values[0],values[1])]
+    figure = dcc.Graph(id='map', figure={
                     'data': [{
-                        'lat': data_frame['Latitude'],
-                        'lon': data_frame['Longitude'],
+                        'lat': df_filtered['Latitude'],
+                        'lon': df_filtered['Longitude'],
                         'marker': {
-                            'color': data_frame.Price,
+                            'color': df_filtered.Price,
                             'size': 11,
                             'opacity': 0.7,
                             'colorscale': 'Jet',
@@ -174,8 +282,8 @@ def display_tab_content(value):
                                     
                                     }
                         },
-                        'text': data_frame['Street'],
-                        'customdata': data_frame['Property number'],
+                        'text': df_filtered['Street'],
+                        'customdata': df_filtered['Property number'],
                         'type': 'scattermapbox',
                         
                     }],
@@ -190,38 +298,20 @@ def display_tab_content(value):
                         'margin': {'l': 0, 'r': 0, 'b': 0, 't': 0}
                     }
                 },
-                style={'width': '70%'}),
-                dcc.RangeSlider(id = 'pricerange-map',
-                                )
-                
-        ]),
-    
+                )
+    return figure
 
-    elif value == 2:
-        return html.Div([html.H4('Predict the price of your desired property!'),
-                html.Div(id = 'Predictor-tab')
-        ])
-    elif value == 4:
-        return html.Div([
-                html.Div('Data viz tab', ),
-                dcc.Dropdown(id = 'data-viz-menu',
-                             options = [
-                                     {'label': 'average price map', 'value': 1},
-                                     {'label': 'graphs', 'value' :2},
-                                     {'label': 'add something', 'value':3}
-                                     ]),
-                    html.Div(id = 'data-viz-content')
-        ])
-    elif value == 5:
-        return html.Div([html.Table(
-                [html.Tr([html.Th(col) for col in data_frame.columns])] + 
-                [html.Tr([
-                        html.Td(data_frame.iloc[i][col]) for col in data_frame.columns
-                        ]) for i in range(min(len(data_frame), len(data_frame)))])
-                    ])
-    
-                
-    
+#Callback that is displayed below the pricerange slider
+@app.callback(Output('pricerange-text', 'children'),
+              [Input('pricerange-map', 'value')]
+              )
+
+def pricerange_text(value):
+    return 'Selected minimum price €{},-, maximum price €{},-'.format(
+            '{0:,}'.format(value[0]),
+            '{0:,}'.format(value[1]))
+
+#Callback tthat displays the streetname above the map   
 @app.callback(
         dash.dependencies.Output('text-content', 'children'),
         [dash.dependencies.Input('map', 'hoverData')]
@@ -234,7 +324,7 @@ def update_text(hoverData):
                     s.iloc[0]['Street'],
                     )
             )          
-
+# Callback that displays all the info next to the map
 @app.callback(
         dash.dependencies.Output('property-details', 'children'),
         [dash.dependencies.Input('map', 'hoverData')]
@@ -272,13 +362,12 @@ def update_details(hoverData):
                         s.iloc[0]['Garden'].lstrip("'[").rstrip("]'"),
                         s.iloc[0]['Link']
                         )))
-
+#Callback for surface slider that pops up if selected
 @app.callback(
         dash.dependencies.Output('dynamic-prediction-input-surface', 'children'),
         [dash.dependencies.Input('prediction-menu', 'value')]
         )
 def display_prediction_input_surface(values):
-    
     if 'space' in values:
         min_surf = min(data_frame["Surface (m²)"])
         max_surf = max(data_frame["Surface (m²)"])
@@ -289,10 +378,11 @@ def display_prediction_input_surface(values):
                            max = max_surf,
                            value = 50,
                            step = 1,
-                           marks = {str(i):'{}'.format(i) for i in range(min_surf,max_surf,10)}
+                           marks = {str(i):'{}'.format(i) for i in range(min_surf,max_surf,25)}
                            )
                 ])
 
+#Callback for colume slider
 @app.callback(
         dash.dependencies.Output('dynamic-prediction-input-volume', 'children'),
         [dash.dependencies.Input('prediction-menu', 'value')]
@@ -311,6 +401,8 @@ def display_prediction_input_volume(values):
                             marks = {str(i):'{}'.format(i) for i in range(min_vol,max_vol,100)},
                            )
                 ])
+                
+#Callback for number of rooms slider
 @app.callback(
         dash.dependencies.Output('dynamic-prediction-input-rooms', 'children'),
         [dash.dependencies.Input('prediction-menu', 'value')]
@@ -329,6 +421,8 @@ def display_prediction_input_rooms(values):
                            marks = {str(i):'{}'.format(i) for i in range(min_room,max_room)},
                            )
                 ])
+
+#Callback for the property type element
 @app.callback(
         dash.dependencies.Output('dynamic-prediction-input-type', 'children'),
         [dash.dependencies.Input('prediction-menu', 'value')]
@@ -347,30 +441,48 @@ def display_prediction_input_type(values):
                            {'label':type_list[4],'value' : 5},
                            {'label':type_list[5],'value' : 6},
                            ]
-                )           
+                ),
+                #style ={'margin-left': 20}           
         ])
 
-
+#Callback for the predictor
 @app.callback(
         dash.dependencies.Output('price-prediction-output', 'children'),
-        [dash.dependencies.Input('Button', 'n_clicks')],
-        [dash.dependencies.State('dynamic-prediction-input-surface', 'value'),
-         ])
+        [dash.dependencies.Input('button', 'n_clicks')],
+        [dash.dependencies.State('surface-slider', 'value'),
+        dash.dependencies.State('volume-slider', 'value'),
+        dash.dependencies.State('room-slider', 'value'),
+        dash.dependencies.State('property-type', 'value')],
+         )
 
-def Price_predictor(n_clicks, value):
-    return  html.H4('The input value was{} and the button was clicked {} times'.format(
-            value,
-            n_clicks))
+def Price_predictor(n_clicks,surf_value, volume_value, room_value, property_type):
+    
+    pred_df = data_frame
+    types = list(set(pred_df["Type"]))
+    pred_df["Type"] = pred_df["Type"].map({str(t):'{}'.format(i) for i, t in enumerate(types)})
+     #This part is not functional, wierd error: says my data is not same shape while it is  
+    clf = linear_model.LinearRegression()
+    clf.fit([pred_df["Surface (m²)"].to_frame(), 
+                        pred_df["Total volume (m³)"].to_frame(),
+                        pred_df['Number of rooms'].to_frame(),
+                        pred_df["Type"].to_frame()],
+    pred_df.Price.to_frame()
+    )
+    price = clf.pred(surf_value,volume_value,room_value,property_type)
+    return  'the value was {} and the button was clicked {}'.format(
+            price,
+            n_clicks)
 
 
-
+#Callback for the data viz tab
 @app.callback(
-        dash.dependencies.Output('data-viz-content', 'children'),
-        [dash.dependencies.Input('data-viz-menu', 'value')]
+        Output('data-viz-content', 'children'),
+        [Input('data-viz-menu', 'value')]
         )
 
 def data_viz_input(value):  
     if value == 1:
+        #This was supposed to be a map with the prices for all the neighbourhoods, unfortunaltely does not display anything
         return dcc.Graph(id = 'map_2',
               figure = {
                       'data':[{
@@ -378,7 +490,8 @@ def data_viz_input(value):
                                       'lat':45.5017,
                                       'lon':-73.5673,
                                       'mode': 'markers',},
-                              'color': nh_data_frame['Mean price']
+                              'color': nh_data_frame['Mean price'],
+                              'type': 'scattermapbox'
                                  }],
                     'layout': {
                         'autosize': True,
@@ -395,27 +508,33 @@ def data_viz_input(value):
                         }
                          )
     if value == 2:
-        return 
-    dcc.Graph(id = 'scatterplot',
-              figure = {
-                      'data':[
-                              go.Scatter(
-                                      x = data_frame["Surface (m²)"],
-                                      y = data_frame.Price,
-                                      mode= 'markers',
-                                      opacity = 0.7,
-                                      marker = {'size': 10,
-                                                'color': data_frame.Neighbourhood}
-                                 )],
-                    'layout': {go.Layout(
-                            xaxis={'title': 'Surface (m²)'},
-                            yaxis={'title': 'Price in Euro'},
-                            hovermode='closest'
-                        )}
+        #Scatterplot to display some relations, couldnt get it working, 
+        #plan was to extend to an interactive plot where you can choose what feature to compare with the price
+        text = 'Scatterplot'
+        graph = dcc.Graph(id = 'scatterplot',
+                         figure = {
+                                 'data':[
+                                         go.Scatter(
+                                                 x = data_frame["Surface (m²)"],
+                                                 y = data_frame.Price,
+                                                 mode= 'markers',
+                                                 opacity = 0.7,
+                                                 marker = {'size': 10
+                                                }
+                                        )
+                                ],
+                                'layout': (go.Layout(
+                                        xaxis={'title': 'Surface (m²)'},
+                                        yaxis={'title': 'Price in Euro'},
+                                        hovermode='closest')
+                                        )
                         }
-                        )
+        )
+        output = html.Div(html.H4(text))             
+        return output
 
 
+#Run server!
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=True, port = 8085)
 
