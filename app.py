@@ -29,15 +29,15 @@ data_frame = data_frame[data_frame["Total volume (m³)"]< 20000]
 mapbox_access_token = 'pk.eyJ1IjoiZHJvZXNqIiwiYSI6ImNqaHFiYTBoZzAwMXUzN3F0dXBhOXMwY3IifQ.tgd10h6uc8XViS1NZMcPnw'
 
 #Part of the not working neighbourhood price map
-neighbourhood_data_url = 'https://kaart.amsterdam.nl/datasets/datasets-item/t/buurtcombinatiegrenzen-1/export/json'
-neighbourhood_data = pd.read_json(neighbourhood_data_url)
+# neighbourhood_data_url = 'https://kaart.amsterdam.nl/datasets/datasets-item/t/buurtcombinatiegrenzen-1/export/json'
+neighbourhood_data = pd.read_json('geojson_amsterdam.json')
 neighbourhoods = []
 
 
 #load data for Neighbourhood map (that does not work yet)
 mean = data_frame.groupby(["Neighbourhood"],).mean()["Price"]
 for nh in range(len(neighbourhood_data['features'])):
-    neighbourhood = neighbourhood_data['features'][nh]['properties']['NAAM']
+    neighbourhood = neighbourhood_data['features'][nh]['properties']['naam']
     if neighbourhood not in list(set(data_frame["Neighbourhood"])):
         continue
     else:
@@ -111,7 +111,7 @@ def display_tab_content(value):
                                ##### This dashboard containins the data of {} properties in Amsterdam.
                                
                                ##### Data is scraped from [Pararius.nl](https://www.pararius.nl) using a slow scraper
-                               ##### which you can find at [my Github]()
+                               ##### which you can find at [my Github]( https://github.com/Droesj)
                                
                                ##### Use the Tabs to the left to navigate to different properties, 
                                ##### you can use the submenus to pick out different options. 
@@ -233,8 +233,8 @@ def display_tab_content(value):
                 html.H3('Data vizualization tab, choose option below', ),
                 dcc.Dropdown(id = 'data-viz-menu',
                              options = [
-                                     {'label': 'average price map', 'value': 1},
-                                     {'label': 'graphs', 'value' :2},
+                                     {'label': 'Average price map', 'value': 1},
+                                     {'label': 'Graphs', 'value' :2},
                                      {'label': 'add something', 'value':3}
                                      ]),
                     html.Div(id = 'data-viz-content',
@@ -382,7 +382,7 @@ def display_prediction_input_surface(values):
                            )
                 ])
 
-#Callback for colume slider
+# Callback for volume slider
 @app.callback(
         dash.dependencies.Output('dynamic-prediction-input-volume', 'children'),
         [dash.dependencies.Input('prediction-menu', 'value')]
@@ -483,56 +483,112 @@ def Price_predictor(n_clicks,surf_value, volume_value, room_value, property_type
 def data_viz_input(value):  
     if value == 1:
         #This was supposed to be a map with the prices for all the neighbourhoods, unfortunaltely does not display anything
-        return dcc.Graph(id = 'map_2',
-              figure = {
-                      'data':[{
-                              'scattermapbox': {
-                                      'lat':45.5017,
-                                      'lon':-73.5673,
-                                      'mode': 'markers',},
-                              'color': nh_data_frame['Mean price'],
-                              'type': 'scattermapbox'
-                                 }],
+        nh_map =  dcc.Graph(id = 'map_2',
+                            figure = {
+                                    'data':[{
+                                            'scattermapbox': {
+                                                    'lat':45.5017,
+                                                    'lon':-73.5673,
+                                                    'mode': 'markers'
+                                                    },
+                                                    'color': nh_data_frame['Mean price'],
+                                                    'type': 'scattermapbox'
+                                                    }
+                                            ],
                     'layout': {
-                        'autosize': True,
-                        'mapbox': {
-                            'layers' :{'sourcetype': 'geojson',
-                                       'source': 'https://kaart.amsterdam.nl/datasets/datasets-item/t/buurtcombinatiegrenzen-1/export/json',
-                                       'type':'fill',
-                                       'color': nh_data_frame['Mean price']
-                                       },
-                            'center':{'lat':52.35211, 'lon': 4.88773},
-                            'zoom': 10.8,
-                            'accesstoken': mapbox_access_token}
-                        }
-                        }
-                         )
+                            'autosize': True,
+                            'mapbox': {
+                            'layers' :{
+                                    'sourcetype': 'geojson',
+                                    'source': 'https://kaart.amsterdam.nl/datasets/datasets-item/t/buurtcombinatiegrenzen-1/export/json',
+                                    'type':'fill',
+                                    'color': nh_data_frame['Mean price']
+                                    },
+                            'center':{
+                                    'lat':52.35211, 
+                                    'lon': 4.88773
+                                    },
+                                    'zoom': 10.8,
+                            'accesstoken': mapbox_access_token
+                            }
+                            }
+                            }
+                            )
+        return nh_map
+    
     if value == 2:
         #Scatterplot to display some relations, couldnt get it working, 
         #plan was to extend to an interactive plot where you can choose what feature to compare with the price
-        text = 'Scatterplot'
-        graph = dcc.Graph(id = 'scatterplot',
-                         figure = {
-                                 'data':[
-                                         go.Scatter(
-                                                 x = data_frame["Surface (m²)"],
-                                                 y = data_frame.Price,
-                                                 mode= 'markers',
-                                                 opacity = 0.7,
-                                                 marker = {'size': 10
-                                                }
-                                        )
-                                ],
-                                'layout': (go.Layout(
-                                        xaxis={'title': 'Surface (m²)'},
-                                        yaxis={'title': 'Price in Euro'},
-                                        hovermode='closest')
-                                        )
-                        }
-        )
-        output = html.Div(html.H4(text))             
+        text = html.Div(id = 'scatterplot_text')
+        menu = dcc.Tabs(tabs=[
+                {'label': 'Surface (m²)', 'value':0},
+                {'label': 'Volume (m³)', 'value': 1},
+                {'label': 'number of rooms', 'value': 2},
+                {'label': 'number of bedrooms', 'value': 3},
+                {'label': 'Year built', 'value': 4}],
+                    id = 'scattermenu',
+                    value = 0
+                    )
+                                
+        graph = html.Div(id = 'scatterplot')
+        slider = dcc.RangeSlider(id = 'pricerange-scatterplot',
+                                min = min(data_frame.Price),
+                                max = max(data_frame.Price),
+                                value = [min(data_frame.Price), max(data_frame.Price)],
+                                ),
+        
+        output = html.Div([menu,graph])             
         return output
 
+
+@app.callback(
+        Output('scatterplot', 'children'),
+        [Input('scattermenu', 'value')
+        #,Input('pricerange-scatterplot','value')
+        ]
+        )
+
+def scatterplot_data(value):
+    #df_filtered = data_frame[data_frame.Price.between(values[0],values[1])]
+    if value == 0:
+        X = data_frame["Surface (m²)"]
+        title = "Surface (m²)"
+    if value == 1: 
+        X = data_frame["Total volume (m³)"]
+        title = "Total volume (m³)"
+    if value == 2:
+        X = data_frame["Number of rooms"]
+        title = "Number of rooms"
+    if value == 3:
+        X = data_frame["Number of bedrooms"]
+        title = "Number of bedrooms"
+    if value == 4:
+        X = data_frame["Year built"]
+        title = "Year built"
+    
+    scatter_graph = dcc.Graph(id = 'scatter_graph',
+                              figure = {
+                                      'data':[
+                                              go.Scatter(
+                                                      x = X,
+                                                      y = data_frame.Price,
+                                                      mode= 'markers',
+                                                      opacity = 0.7,
+                                                      marker = {'size': 10,
+                                                                'line': {'width': 0.5, 'color': 'white'}
+                                                                },
+                                                      name = data_frame.Street
+                                                      )
+                                              ],
+                                      'layout': (go.Layout(
+                                              xaxis={'title': title},
+                                              yaxis={'title': 'Price in Euro'},
+                                              hovermode='closest')
+                                      )
+                                      }
+                                      )
+    return scatter_graph
+    
 
 #Run server!
 if __name__ == '__main__':
