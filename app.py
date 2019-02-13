@@ -12,6 +12,7 @@ import dash_core_components as dcc
 import dash_html_components as html
 #import dash_table_experiments as dt
 import pandas as pd
+import numpy as np
 from textwrap import dedent
 import plotly.graph_objs as go
 from sklearn import linear_model
@@ -49,7 +50,7 @@ for nh in range(len(neighbourhood_data['features'])):
 
     nh_data_frame = pd.DataFrame(neighbourhoods)
 
-    
+   
     
     
 #initialize the app    
@@ -311,7 +312,7 @@ def pricerange_text(value):
             '{0:,}'.format(value[0]),
             '{0:,}'.format(value[1]))
 
-#Callback tthat displays the streetname above the map   
+#Callback that displays the streetname above the map   
 @app.callback(
         dash.dependencies.Output('text-content', 'children'),
         [dash.dependencies.Input('map', 'hoverData')]
@@ -456,23 +457,24 @@ def display_prediction_input_type(values):
          )
 
 def Price_predictor(n_clicks,surf_value, volume_value, room_value, property_type):
-    
     pred_df = data_frame
     types = list(set(pred_df["Type"]))
     pred_df["Type"] = pred_df["Type"].map({str(t):'{}'.format(i) for i, t in enumerate(types)})
-     #This part is not functional, wierd error: says my data is not same shape while it is  
     clf = linear_model.LinearRegression()
-    clf.fit([pred_df["Surface (m²)"].to_frame(), 
-                        pred_df["Total volume (m³)"].to_frame(),
-                        pred_df['Number of rooms'].to_frame(),
-                        pred_df["Type"].to_frame()],
-    pred_df.Price.to_frame()
-    )
-    price = clf.pred(surf_value,volume_value,room_value,property_type)
-    return  'the value was {} and the button was clicked {}'.format(
+    features = ["Surface (m²)","Total volume (m³)",
+                'Number of rooms',"Type"]
+    X_sel = pred_df[features]
+    clf.fit(X = X_sel, y = pred_df.Price) 
+    if surf_value == 0:
+        price = 'hello'
+    else:
+        
+        predictors = np.array([surf_value,volume_value,room_value,property_type])
+    
+        price = clf.predict(predictors.reshape(1,-1))[0]
+    return  'the value was €{},- and the button was clicked {} times'.format(
             price,
             n_clicks)
-
 
 #Callback for the data viz tab
 @app.callback(
@@ -592,5 +594,5 @@ def scatterplot_data(value):
 
 #Run server!
 if __name__ == '__main__':
-    app.run_server(debug=True, port = 8085)
+    app.run_server(debug=True, port = 8080)
 
